@@ -16,6 +16,7 @@
 #include "instances_renderer.h"
 #include "plane_renderer.h"
 #include "point_cloud_renderer.h"
+#include "image_tracker.h"
 
 namespace godot {
 class ARCoreInterface : public XRInterfaceExtension {
@@ -103,6 +104,7 @@ private:
 	arcore_plugin::PlaneRenderer m_plane_renderer;
 	arcore_plugin::InstancesRenderer m_instances_renderer;
 	arcore_plugin::PointCloudRenderer m_point_cloud_renderer;
+	arcore_plugin::ImageTracker m_image_tracker;
 
 	InitStatus m_init_status;
 	ArSession *m_ar_session;

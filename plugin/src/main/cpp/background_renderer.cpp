@@ -83,6 +83,8 @@ void computeDepth(ArSession &p_ar_session, const ArFrame &p_ar_frame, godot::Ref
 		ArImage_release(depthImage);
 
 		// p_feed->set_external_depthmap(array, width, height);
+	} else {
+		ALOGW("Godot ARCore: Warning: Depth computation requested but not supported");
 	}
 }
 

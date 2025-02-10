@@ -69,6 +69,7 @@ XRInterface::TrackingStatus ARCoreInterface::_get_tracking_status() const {
 
 void ARCoreInterface::start() {
 	ALOGV("ARCoreInterface::start()");
+	printf("CSTM: ARCoreInterface::start()");
 }
 
 void ARCoreInterface::_resume() {
@@ -108,6 +109,14 @@ int32_t ARCoreInterface::_get_camera_feed_id() const {
 }
 
 void ARCoreInterface::enable_depth_estimation(bool p_enable) {
+	ALOGW("Godot ARCore: Requestiing depth estimation");
+	printf("CSTM: Godot ARCore: Requestiing depth estimation");
+
+	if(!is_depth_supported()){
+		ALOGW("Godot ARCore: Requested depth estimation, but is not supported, aborting");
+		printf("CSTM: Godot ARCore: Requested depth estimation, but is not supported, aborting");
+		return;
+	}
 	m_enable_depth_estimation = p_enable;
 	configureSession();
 }
@@ -278,8 +287,13 @@ Transform3D ARCoreInterface::getHitRayPose(const Vector3 &p_origin, const Vector
 }
 
 void ARCoreInterface::set_node_images_mapping(const Dictionary &in_nodeImagesMap) {
+	ALOGV("Godot ARCore: Requested image tracking of %ld images\n", in_nodeImagesMap.size());
 	if (m_enable_images_detection) {
-		m_instances_renderer.set_node_images_mapping(in_nodeImagesMap);
+		m_instances_renderer.set_node_images_mapping(m_ar_session, in_nodeImagesMap);
+
+		// dunno if this is required, put this when debugging
+		configureSession();
+
 	} else {
 		ALOGW("Godot ARCore: set_node_images_mapping called but images detection is not enabled");
 	}
@@ -342,7 +356,8 @@ bool ARCoreInterface::_initialize() {
 			}
 
 			// Trigger a display rotation
-			m_display_orientation = Orientation::UNKNOWN;
+			m_display_orientation = Orientation::ROTATION_0;
+
 
 			// Everything is initialised
 			m_init_status = INITIALISED;
@@ -364,6 +379,9 @@ bool ARCoreInterface::_initialize() {
 		}
 
 		m_background_renderer.initialize(m_screen_width, m_screen_height);
+		m_image_tracker.initialize(m_ar_session);
+		m_instances_renderer.initalize(&m_image_tracker);
+
 
 		configureSession();
 	}
@@ -708,6 +726,7 @@ void ARCoreInterface::_process() {
 	}
 
 	if (m_enable_images_detection) {
+		m_image_tracker.process(*m_ar_session, *m_ar_frame);
 		m_instances_renderer.process(*m_ar_session);
 	} else {
 		m_instances_renderer.clear();
@@ -777,6 +796,8 @@ void ARCoreInterface::configureSession() {
 	} else {
 		ArConfig_setPlaneFindingMode(m_ar_session, ar_config, AR_PLANE_FINDING_MODE_DISABLED);
 	}
+
+	ArConfig_setAugmentedImageDatabase(m_ar_session, ar_config, m_image_tracker.getActiveDatabase());
 
 	ERR_FAIL_NULL(ar_config);
 	ERR_FAIL_COND(ArSession_configure(m_ar_session, ar_config) != AR_SUCCESS);
