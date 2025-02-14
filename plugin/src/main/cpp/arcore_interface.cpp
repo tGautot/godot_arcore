@@ -30,9 +30,17 @@ void ARCoreInterface::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_light_color_correction"), &ARCoreInterface::get_light_color_correction);
 	ClassDB::bind_method(D_METHOD("get_light_main_hdr_direction"), &ARCoreInterface::get_light_main_hdr_direction);
 	ClassDB::bind_method(D_METHOD("get_light_main_hdr_intensity"), &ARCoreInterface::get_light_main_hdr_intensity);
+	ClassDB::bind_method(D_METHOD("image_tracker_database_create"), &ARCoreInterface::image_tracker_database_create);
+	ClassDB::bind_method(D_METHOD("image_tracker_database_add_image"), &ARCoreInterface::image_tracker_database_add_image);
+	ClassDB::bind_method(D_METHOD("image_tracker_database_get_serialized"), &ARCoreInterface::image_tracker_database_get_serialized);
+	ClassDB::bind_method(D_METHOD("image_tracker_database_load"), &ARCoreInterface::image_tracker_database_load);
+	ClassDB::bind_method(D_METHOD("image_tracker_is_image_tracked"), &ARCoreInterface::image_tracker_is_image_tracked);
+	ClassDB::bind_method(D_METHOD("image_tracker_get_tracked_transform"), &ARCoreInterface::image_tracker_get_tracked_transform);
 	ClassDB::bind_method(D_METHOD("getNear"), &ARCoreInterface::getNear);
 	ClassDB::bind_method(D_METHOD("getFar"), &ARCoreInterface::getFar);
 }
+
+
 
 ARCoreInterface::ARCoreInterface() {
 	m_init_status = NOT_INITIALISED;
@@ -298,6 +306,51 @@ void ARCoreInterface::set_node_images_mapping(const Dictionary &in_nodeImagesMap
 		ALOGW("Godot ARCore: set_node_images_mapping called but images detection is not enabled");
 	}
 }
+
+
+
+void ARCoreInterface::image_tracker_database_create(){
+	ALOGV("Creating new image tracker database and updating session config\n");
+	m_image_tracker.createFreshDatabase(m_ar_session);
+	configureSession();
+}
+
+void ARCoreInterface::image_tracker_database_load(const godot::PackedByteArray &db){
+	m_image_tracker.loadSerializedDatabase(m_ar_session, db.ptr(), db.size());
+	configureSession();
+}
+
+godot::PackedByteArray ARCoreInterface::image_tracker_database_get_serialized(){
+	uint8_t *data;
+	int64_t size;
+	m_image_tracker.serializeDatabase(m_ar_session, &data, &size);
+
+	// TODO look into this
+	// copy :( is there another way to send this in godot world??
+	// ArString release is expected, but is it needed?? https://developers.google.com/ar/reference/c/group/ar-augmented-image-database#araugmentedimagedatabase_serialize
+	// Also, would using a PackedInt64 be faster?
+	PackedByteArray pba;
+	pba.resize(size);
+	for(int64_t i = 0; i < size; i++) pba.set(i,data[i]);
+	ArByteArray_release(data);
+	return pba;
+}
+
+void ARCoreInterface::image_tracker_database_add_image(godot::Ref<godot::Image> img, const godot::String &img_identifier){
+	m_image_tracker.registerImageForTracking(m_ar_session, img.ptr(), img_identifier);
+	configureSession();
+}
+
+bool ARCoreInterface::image_tracker_is_image_tracked(const godot::String &img_identifier){
+	return true;
+}
+
+godot::Transform3D ARCoreInterface::image_tracker_get_tracked_transform(const godot::String &img_identifier){
+	float mat[16];
+	m_image_tracker.getImageTransformMatrix(m_ar_session, img_identifier, mat);
+	return to_godot_transform(mat);
+}
+
 
 bool ARCoreInterface::_is_initialized() const {
 	// If we are in the process of initialising, we treat it as initialised
@@ -797,6 +850,7 @@ void ARCoreInterface::configureSession() {
 		ArConfig_setPlaneFindingMode(m_ar_session, ar_config, AR_PLANE_FINDING_MODE_DISABLED);
 	}
 
+	ALOGV("Godot ARCore: Session reconfigured, active image db is now %p\n", m_image_tracker.getActiveDatabase());
 	ArConfig_setAugmentedImageDatabase(m_ar_session, ar_config, m_image_tracker.getActiveDatabase());
 
 	ERR_FAIL_NULL(ar_config);

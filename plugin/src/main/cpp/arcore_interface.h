@@ -88,6 +88,14 @@ public:
 	godot::Vector3 get_light_main_hdr_direction();
 	godot::Vector3 get_light_main_hdr_intensity();
 
+	void image_tracker_database_create();
+	godot::PackedByteArray image_tracker_database_get_serialized();
+	void image_tracker_database_load(const godot::PackedByteArray &db);
+	void image_tracker_database_add_image(godot::Ref<godot::Image> img, const godot::String &img_identifier);
+	bool image_tracker_is_image_tracked(const godot::String &img_identifier);
+	godot::Transform3D image_tracker_get_tracked_transform(const godot::String &img_identifier);
+
+
 	float getNear() { return m_z_near; }
 	float getFar() { return m_z_far; }
 

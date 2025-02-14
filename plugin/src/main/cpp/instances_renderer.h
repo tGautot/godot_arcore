@@ -29,7 +29,7 @@ private:
 
 	//godot::Node* m_instances_node {nullptr};
 
-	godot::HashMap<size_t, godot::Node3D *> m_instances_nodes;
+	godot::HashMap<godot::String, godot::Node3D *> m_instances_nodes;
 
 	godot::Dictionary m_nodeImagesMap;
 };

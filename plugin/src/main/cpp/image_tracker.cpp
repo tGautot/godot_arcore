@@ -20,7 +20,42 @@ ImageTracker::~ImageTracker(){
 
 void ImageTracker::initialize(ArSession *p_ar_session){
     ALOGV("Godot ARCore: Initializing ImageTracker\n");
+    //ArAugmentedImageDatabase_create(p_ar_session, &image_db);
+}
+
+void ImageTracker::createFreshDatabase(ArSession *p_ar_session){
+    //if(image_db != nullptr){
+    //    ArAugmentedImageDatabase_destroy(image_db);
+    //    image_db = nullptr;
+    //}
+    ALOGV("Godot ARCore: ImageTracker: Creating fresh database\n");
     ArAugmentedImageDatabase_create(p_ar_session, &image_db);
+}
+
+void ImageTracker::serializeDatabase(ArSession *p_ar_session, uint8_t **r_byte_array, int64_t *r_size){
+    ArAugmentedImageDatabase_serialize(p_ar_session, image_db, r_byte_array, r_size);
+}
+
+void ImageTracker::loadSerializedDatabase(ArSession *p_ar_session, const uint8_t *r_byte_array, int64_t r_size){
+    //if(image_db != nullptr){
+    //    ArAugmentedImageDatabase_destroy(image_db);
+    //    image_db = nullptr;
+    //}
+    ArAugmentedImageDatabase_deserialize(p_ar_session, r_byte_array, r_size, &image_db);
+}
+
+void ImageTracker::getImageTransformMatrix(ArSession *p_ar_session, const godot::String &p_img_name, float *r_mat4){
+    ArAnchor* anchor = getImageAnchor(p_img_name);
+    if(anchor == nullptr){
+        for(int i = 0; i < 16; i++) r_mat4[i] = 0.0;
+        return;
+    } 
+    
+    ScopedArPose scopedArPose(p_ar_session);
+    ArAnchor_getPose(p_ar_session, anchor, scopedArPose.GetArPose());
+
+    ArPose_getMatrix(p_ar_session, scopedArPose.GetArPose(), r_mat4);
+    
 }
 
 void ImageTracker::process(ArSession &p_ar_session, ArFrame &p_ar_frame){
@@ -33,8 +68,9 @@ void ImageTracker::process(ArSession &p_ar_session, ArFrame &p_ar_frame){
     ArTrackableList_getSize(&p_ar_session, updated_image_list, &image_list_size);
     int32_t totImg;
     ArAugmentedImageDatabase_getNumImages(&p_ar_session, image_db, &totImg);
-    ALOGV("Currently tracking a total of %d/%d images\n", image_list_size, totImg);
+    ALOGV("Godot ARCore: Currently tracking a total of %d/%d images\n", image_list_size, totImg);
     for (int i = 0; i < image_list_size; ++i) {
+        ALOGV("Godot ARCore: tracked image Loop iter\n");
         ArTrackable* ar_trackable = nullptr;
         ArTrackableList_acquireItem(&p_ar_session, updated_image_list, i,
                                     &ar_trackable);
@@ -46,6 +82,10 @@ void ImageTracker::process(ArSession &p_ar_session, ArFrame &p_ar_frame){
         int image_index;
         ArAugmentedImage_getIndex(&p_ar_session, image, &image_index);
 
+        char* name;
+        ArAugmentedImage_acquireName(&p_ar_session, image, &name);
+        ALOGV("Godot ARCore: Checking Tracking status for image %s\n", name);
+
         if (tracking_state == AR_TRACKING_STATE_TRACKING) {
             ALOGV("Godot ARCore: Tracked Image index %d is being tracked\n", image_index);
             ScopedArPose scopedArPose(&p_ar_session);
@@ -53,50 +93,69 @@ void ImageTracker::process(ArSession &p_ar_session, ArFrame &p_ar_frame){
                                         scopedArPose.GetArPose());
 
             ArAnchor* image_anchor = nullptr;
-            const ArStatus status = ArTrackable_acquireNewAnchor(
+            ArTrackable_acquireNewAnchor(
 					&p_ar_session, ar_trackable, scopedArPose.GetArPose(), &image_anchor);
 
-			img_to_anchor[image_index] = image_anchor;
+            
+            {
+                ScopedArPose scopedArPose(&p_ar_session);
+                ArAnchor_getPose(&p_ar_session, image_anchor, scopedArPose.GetArPose());
+                float mat4[16];
+                ArPose_getMatrix(&p_ar_session, scopedArPose.GetArPose(), mat4);
+            
+                godot::Vector3 pos = to_godot_position(mat4);
+                ALOGV("Godot ARCore: Position of tracked image %s updated to (%f, %f, %f)\n", name, pos.x, pos.y, pos.z);
+            }
+
+            name_to_anchor[godot::String(name)] = image_anchor;
+            ArString_release(name);
         }
         else{
             if(tracking_state == AR_TRACKING_STATE_PAUSED){
-                ALOGV("Godot ARCore: Tracked Image index %d has tracking PAUSED\n", image_index);
+                ALOGV("Godot ARCore: Tracked Image %s has tracking PAUSED\n", name);
             }
-            if(tracking_state == AR_TRACKING_STATE_STOPPED){
-                ALOGV("Godot ARCore: Tracked Image index %d has tracking STOPPED\n", image_index);
+            else if(tracking_state == AR_TRACKING_STATE_STOPPED){
+                ALOGV("Godot ARCore: Tracked Image %s has tracking STOPPED\n", name);
+            } else {
+                ALOGV("Godot ARCore: Tracked Image %s has tracking status %d\n", name, tracking_state);
             }
+
             //img_to_anchor[image_index] = nullptr;
         }
     }
 }
 
 
-int ImageTracker::registerImageForTracking(ArSession *p_ar_session, godot::Image &p_img, const char * p_img_name){
+int ImageTracker::registerImageForTracking(ArSession *p_ar_session, godot::Image *p_img, const godot::String &p_img_name, float p_phys_img_width){
 
     // TODO put this in background thread as said here
     // https://developers.google.com/ar/reference/c/group/ar-augmented-image-database#araugmentedimagedatabase_addimage
 
-    int32_t w = p_img.get_width(), h = p_img.get_height();
-    ALOGV("Godot ARCore: Registering %dx%d image\n", w, h);
+    int32_t w = p_img->get_width(), h = p_img->get_height();
+    ALOGV("Godot ARCore: Registering image as %s (%dx%d)\n", p_img_name.ascii().ptr(), w, h);
     ALOGV("Godot ARCore: Session null: %d   - Image DB null: %d\n", p_ar_session == nullptr, image_db == nullptr);
     uint8_t* grayscale = (uint8_t*) memalloc(w*h*sizeof(uint8_t));
 
-    //String gsAsString = "";
-
+    
     for(int j = 0; j < h; j++){
+        //String gsAsString = "";
     for(int i = 0; i < w; i++){
-        Color pixc = p_img.get_pixel(i, j);
+        Color pixc = p_img->get_pixel(i, j);
         grayscale[i+j*w] = uint8_t(CLAMP( 255.0*(0.299*pixc.r + 0.587*pixc.g + 0.115*pixc.b), 0, 255));
-        //gsAsString += grayscale[i+j*w] + " ";
-    } /*gsAsString += "\n";*/ }
+        //gsAsString += godot::String::num_uint64(uint64_t(grayscale[i+j*w])) + " ";
+    } /*ALOGV("Godot ARCore: Image grayscale line %s\n", gsAsString.ascii().ptr());*/ }
 
-    //ALOGV("Godot ARCore: Image grayscale is \n%s\n", gsAsString.ascii().ptr());
+    
 
     int32_t outidx;
 
-    ArStatus stts = ArAugmentedImageDatabase_addImageWithPhysicalSize(p_ar_session, image_db, p_img_name, grayscale, w, h, w, 0.14, &outidx);
+    ArStatus stts;
+    if(p_phys_img_width > 0.0) stts = ArAugmentedImageDatabase_addImageWithPhysicalSize(
+        p_ar_session, image_db, p_img_name.ascii().ptr(), grayscale, w, h, w, p_phys_img_width, &outidx);
+    else stts = ArAugmentedImageDatabase_addImage(
+        p_ar_session, image_db, p_img_name.ascii().ptr(), grayscale, w, h, w, &outidx);
 
-    img_to_anchor.insert(outidx, nullptr);
+    name_to_anchor.insert(p_img_name, nullptr);
 
     memfree(grayscale);
 
@@ -110,13 +169,17 @@ int ImageTracker::registerImageForTracking(ArSession *p_ar_session, godot::Image
     }
 
     if(stts == AR_ERROR_IMAGE_INSUFFICIENT_QUALITY){
-        ALOGE("Godot ARCore: Cannot track image %s , lacking trackable features", p_img_name);
+        ALOGE("Godot ARCore: Cannot track image %s , lacking trackable features", p_img_name.ascii().ptr());
     }
 
     return stts;
 
 }
 
-ArAnchor* ImageTracker::getImageAnchor(int p_img_id){
-    return img_to_anchor.get(p_img_id);
+ArAnchor* ImageTracker::getImageAnchor(const godot::String &p_img_name){
+    if(!name_to_anchor.has(p_img_name)){
+        ALOGV("Requested anchor of image %s\n", p_img_name.ascii().ptr());
+        return nullptr;
+    }
+    return name_to_anchor.get(p_img_name);
 }
