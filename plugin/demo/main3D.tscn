@@ -1,9 +1,12 @@
-[gd_scene load_steps=13 format=3 uid="uid://b0n6vtr0gl6l3"]
+[gd_scene load_steps=16 format=3 uid="uid://b0n6vtr0gl6l3"]
 
-[ext_resource type="Script" path="res://MeshInstance3D.gd" id="1_0ufg4"]
-[ext_resource type="Script" path="res://main3D.gd" id="1_a4ilg"]
+[ext_resource type="Script" uid="uid://cl1senhkb7cw0" path="res://MeshInstance3D.gd" id="1_0ufg4"]
+[ext_resource type="Script" uid="uid://dri7o8k3ojxs5" path="res://main3D.gd" id="1_a4ilg"]
+[ext_resource type="Image" uid="uid://dts6yjbc0jd2i" path="res://Godot_ARCoreExample.png" id="2_auif7"]
 [ext_resource type="PackedScene" uid="uid://cglxfqvt03e63" path="res://ui.tscn" id="3_rflmv"]
-[ext_resource type="PackedScene" uid="uid://cb26lopdx85mb" path="res://ruler.blend" id="4_qfgab"]
+[ext_resource type="PackedScene" uid="uid://bkoj7y68ypvph" path="res://ruler.blend" id="4_qfgab"]
+[ext_resource type="Script" uid="uid://5s58hx1fe1by" path="res://ImageTrackedComponent.gd" id="6_jvady"]
+[ext_resource type="PackedScene" uid="uid://c64yix7y4oc2d" path="res://StickNode.tscn" id="6_u4qf1"]
 
 [sub_resource type="Environment" id="Environment_p5o4h"]
 background_mode = 5
@@ -43,6 +46,7 @@ far = 10.23
 
 [node name="Pink" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.295, -0.995)
+visible = false
 material_override = SubResource("StandardMaterial3D_uqmg6")
 mesh = SubResource("PrismMesh_erelu")
 script = ExtResource("1_0ufg4")
@@ -52,17 +56,34 @@ transform = Transform3D(0.7839, 0.442961, 0.43507, -0.589591, 0.750733, 0.297964
 
 [node name="Green" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.008, -2.001)
+visible = false
 material_override = SubResource("StandardMaterial3D_46dqb")
 mesh = SubResource("PrismMesh_tcft2")
 
 [node name="Blue" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.529, -3)
+visible = false
 mesh = SubResource("PrismMesh_kr2qi")
 
 [node name="Node2D" parent="." instance=ExtResource("3_rflmv")]
 
 [node name="ruler" parent="." instance=ExtResource("4_qfgab")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.01, -0.575, -1)
+visible = false
+
+[node name="ImageTracked" type="Node3D" parent="."]
+
+[node name="Node3D2" parent="ImageTracked" instance=ExtResource("6_u4qf1")]
+transform = Transform3D(0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2, 0, 0, 0)
+
+[node name="Node" type="Node" parent="ImageTracked/Node3D2"]
+script = ExtResource("6_jvady")
+trackedImage = ExtResource("2_auif7")
+position_offset = Vector3(0, 0.3, 0)
+maxDistanceRender = 1.0
+x_rotation_mix = 0
+y_rotation_mix = 0
+z_rotation_mix = 0
 
 [connection signal="estimate_depthmap_toggled" from="Node2D" to="." method="_on_node_2d_estimate_depthmap_toggled"]
 [connection signal="far_changed" from="Node2D" to="." method="_on_node_2d_far_changed"]

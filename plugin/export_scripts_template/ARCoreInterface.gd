@@ -50,6 +50,10 @@ func enable_images_detection(toggled):
 	if arcore_interface:
 		arcore_interface.enable_images_detection(toggled)
 
+func track_nodes_to_images(dict: Dictionary):
+	if arcore_interface:
+		arcore_interface.set_node_images_mapping(dict)
+
 func enable_instant_placement(toggled):
 	if arcore_interface:
 		arcore_interface.enable_instant_placement(toggled)
@@ -73,3 +77,25 @@ func get_light_main_hdr_direction():
 func get_light_main_hdr_intensity():
 	if arcore_interface:
 		return arcore_interface.get_light_main_hdr_intensity()
+
+func create_image_tracker_database():
+	if arcore_interface:
+		arcore_interface.image_tracker_database_create()
+
+func get_image_tracker_database_serialized():
+	if arcore_interface:
+		return arcore_interface.image_tracker_database_get_serialized()
+
+func load_image_tracker_database(bytes):
+	if arcore_interface:
+		arcore_interface.image_tracker_database_load(bytes)
+
+func image_tracker_database_add_image(img: Image, identifier: String):
+	if arcore_interface:
+		arcore_interface.image_tracker_database_add_image(img, identifier)
+
+func image_tracker_get_tracked_transform(identifier: String):
+	if arcore_interface:
+		return arcore_interface.image_tracker_get_tracked_transform(identifier)
+
+

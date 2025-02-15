@@ -6,8 +6,9 @@ var _android_plugin
 var is_estimating_light = false
 var original_light_trsf: Transform3D;
 
+
 # Called when the node enters the scene tree for the first time.
-func _ready():
+func _enter_tree() -> void:
 	for s in Engine.get_singleton_list():
 		print("MCT " + s.get_basename())
 	if Engine.has_singleton(_plugin_name):
@@ -28,12 +29,21 @@ func _ready():
 	ARCoreInterfaceInstance.start()
 
 	original_light_trsf = $DirectionalLight3D.transform
+	
+	ARCoreInterfaceInstance.enable_images_detection(true)
+	ARCoreInterfaceInstance.create_image_tracker_database()
+	#ARCoreInterfaceInstance.image_tracker_database_add_image(imageToTrack.get_image(), "base")
+	#ARCoreInterfaceInstance.track_nodes_to_images({
+	#	imageToTrack.get_image(): nodeToStick
+	#})
 
 func _exit_tree():
 	_android_plugin.uninitializeEnvironment()
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
+	#var imgTrsfm: Transform3D = ARCoreInterfaceInstance.image_tracker_get_tracked_transform("base")
+	#nodeToStick.position = imgTrsfm.origin
 	if (is_estimating_light):
 		var light_dir = ARCoreInterfaceInstance.get_light_main_hdr_direction()
 		$DirectionalLight3D.rotation = light_dir
