@@ -85,8 +85,8 @@ class ARCorePlugin(godot: Godot): GodotPlugin(godot) {
 
         // These are placeholders needed to get ARCore to report hit tests
         // Will be removed later
-        surfaceView = GLSurfaceView(activity)
-        surfaceView!!.setRenderer(GodotRenderer())
+        //surfaceView = GLSurfaceView(activity)
+        //surfaceView!!.setRenderer(GodotRenderer())
 
         return null
     }
@@ -163,7 +163,10 @@ class ARCorePlugin(godot: Godot): GodotPlugin(godot) {
             // Note that the order of pausing matters - GLSurfaceView is paused first so that it does not try
             // to query the session. If Session is paused before GLSurfaceView, GLSurfaceView may
             // still call session.update() and get a SessionPausedException.
-            surfaceView!!.onPause()
+            
+            
+            //surfaceView!!.onPause()
+            
             session!!.pause()
         }
     }
@@ -234,7 +237,7 @@ class ARCorePlugin(godot: Godot): GodotPlugin(godot) {
     }
 
     override fun onGLDrawFrame(gl: GL10?) {
-        //Log.d(TAG,"onGLDrawFrame")
+        Log.d(TAG,"onGLDrawFrame")
 
         // Do we call the super up here or later?
         super.onGLDrawFrame(gl)
@@ -265,7 +268,7 @@ class ARCorePlugin(godot: Godot): GodotPlugin(godot) {
                 trackables.forEach() { trackable ->
                     resultString += "$trackable, "
                 }
-                Log.d(TAG, resultString)
+                Log.d(TAG, "Trackables: " + resultString)
             }
 
             var hitResultList: List<HitResult>  = frame.hitTest(100.0F, 100.0F)

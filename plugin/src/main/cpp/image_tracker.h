@@ -9,6 +9,10 @@
 
 namespace arcore_plugin {
 
+typedef struct {
+    float mat4[16];
+    bool validTracking;
+} ImageFrameTrackingData;
 
 class ImageTracker {
 public:
@@ -21,6 +25,7 @@ public:
     void serializeDatabase(ArSession *p_ar_session, uint8_t **r_byte_array, int64_t *r_size);
     void loadSerializedDatabase(ArSession *p_ar_session, const uint8_t *r_byte_array, int64_t r_size);
     void getImageTransformMatrix(ArSession *p_ar_session, const godot::String &p_img_name, float* r_mat4);
+    bool getImageTrackingStatus(ArSession *p_ar_session, const godot::String &p_img_name);
 
     void process(ArSession &p_ar_session, ArFrame &p_ar_frame);
 
@@ -28,11 +33,10 @@ public:
 
     int registerImageForTracking(ArSession *p_ar_session, godot::Image *p_img, const godot::String &p_img_name, float p_phys_img_width = -1.0);
 
-    ArAnchor* getImageAnchor(const godot::String &p_img_name);
-
+    
 private:
     ArAugmentedImageDatabase *image_db = nullptr;
-    godot::HashMap<godot::String, ArAnchor*> name_to_anchor;
+    godot::HashMap<godot::String, ImageFrameTrackingData*> name_to_data;
 };
 
 

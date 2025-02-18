@@ -16,6 +16,11 @@ ImageTracker::~ImageTracker(){
     if(image_db != nullptr){
         ArAugmentedImageDatabase_destroy(image_db);
     }
+
+    for(godot::HashMap<godot::String, ImageFrameTrackingData*>::Iterator itt = name_to_data.begin();
+                itt != name_to_data.end(); ++itt){
+        memfree(itt->value);
+    };
 }
 
 void ImageTracker::initialize(ArSession *p_ar_session){
@@ -45,18 +50,13 @@ void ImageTracker::loadSerializedDatabase(ArSession *p_ar_session, const uint8_t
 }
 
 void ImageTracker::getImageTransformMatrix(ArSession *p_ar_session, const godot::String &p_img_name, float *r_mat4){
-    ArAnchor* anchor = getImageAnchor(p_img_name);
-    if(anchor == nullptr){
-        for(int i = 0; i < 16; i++) r_mat4[i] = 0.0;
-        return;
-    } 
-    
-    ScopedArPose scopedArPose(p_ar_session);
-    ArAnchor_getPose(p_ar_session, anchor, scopedArPose.GetArPose());
-
-    ArPose_getMatrix(p_ar_session, scopedArPose.GetArPose(), r_mat4);
-    
+    r_mat4 = name_to_data[p_img_name]->mat4;
 }
+
+bool ImageTracker::getImageTrackingStatus(ArSession *p_ar_session, const godot::String &p_img_name){
+    return name_to_data[p_img_name]->validTracking;
+}
+
 
 void ImageTracker::process(ArSession &p_ar_session, ArFrame &p_ar_frame){
     ArTrackableList* updated_image_list = nullptr;
@@ -68,9 +68,9 @@ void ImageTracker::process(ArSession &p_ar_session, ArFrame &p_ar_frame){
     ArTrackableList_getSize(&p_ar_session, updated_image_list, &image_list_size);
     int32_t totImg;
     ArAugmentedImageDatabase_getNumImages(&p_ar_session, image_db, &totImg);
-    ALOGV("Godot ARCore: Currently tracking a total of %d/%d images\n", image_list_size, totImg);
+    //ALOGV("Godot ARCore: Currently tracking a total of %d/%d images\n", image_list_size, totImg);
     for (int i = 0; i < image_list_size; ++i) {
-        ALOGV("Godot ARCore: tracked image Loop iter\n");
+        //ALOGV("Godot ARCore: tracked image Loop iter\n");
         ArTrackable* ar_trackable = nullptr;
         ArTrackableList_acquireItem(&p_ar_session, updated_image_list, i,
                                     &ar_trackable);
@@ -84,10 +84,11 @@ void ImageTracker::process(ArSession &p_ar_session, ArFrame &p_ar_frame){
 
         char* name;
         ArAugmentedImage_acquireName(&p_ar_session, image, &name);
-        ALOGV("Godot ARCore: Checking Tracking status for image %s\n", name);
+        godot::String godotName = godot::String(name);
+        //ALOGV("Godot ARCore: Checking Tracking status for image %s\n", name);
 
         if (tracking_state == AR_TRACKING_STATE_TRACKING) {
-            ALOGV("Godot ARCore: Tracked Image index %d is being tracked\n", image_index);
+            //ALOGV("Godot ARCore: Tracked Image index %d is being tracked\n", image_index);
             ScopedArPose scopedArPose(&p_ar_session);
             ArAugmentedImage_getCenterPose(&p_ar_session, image,
                                         scopedArPose.GetArPose());
@@ -100,17 +101,18 @@ void ImageTracker::process(ArSession &p_ar_session, ArFrame &p_ar_frame){
             {
                 ScopedArPose scopedArPose(&p_ar_session);
                 ArAnchor_getPose(&p_ar_session, image_anchor, scopedArPose.GetArPose());
-                float mat4[16];
-                ArPose_getMatrix(&p_ar_session, scopedArPose.GetArPose(), mat4);
+
+                ArPose_getMatrix(&p_ar_session, scopedArPose.GetArPose(), name_to_data[godotName]->mat4);
             
-                godot::Vector3 pos = to_godot_position(mat4);
+                godot::Vector3 pos = to_godot_position(name_to_data[godotName]->mat4);
                 ALOGV("Godot ARCore: Position of tracked image %s updated to (%f, %f, %f)\n", name, pos.x, pos.y, pos.z);
             }
 
-            name_to_anchor[godot::String(name)] = image_anchor;
+            name_to_data[godotName]->validTracking = true;
             ArString_release(name);
         }
         else{
+            name_to_data[godotName]->validTracking = false;
             if(tracking_state == AR_TRACKING_STATE_PAUSED){
                 ALOGV("Godot ARCore: Tracked Image %s has tracking PAUSED\n", name);
             }
@@ -138,12 +140,10 @@ int ImageTracker::registerImageForTracking(ArSession *p_ar_session, godot::Image
 
     
     for(int j = 0; j < h; j++){
-        //String gsAsString = "";
     for(int i = 0; i < w; i++){
         Color pixc = p_img->get_pixel(i, j);
         grayscale[i+j*w] = uint8_t(CLAMP( 255.0*(0.299*pixc.r + 0.587*pixc.g + 0.115*pixc.b), 0, 255));
-        //gsAsString += godot::String::num_uint64(uint64_t(grayscale[i+j*w])) + " ";
-    } /*ALOGV("Godot ARCore: Image grayscale line %s\n", gsAsString.ascii().ptr());*/ }
+    }}
 
     
 
@@ -155,7 +155,8 @@ int ImageTracker::registerImageForTracking(ArSession *p_ar_session, godot::Image
     else stts = ArAugmentedImageDatabase_addImage(
         p_ar_session, image_db, p_img_name.ascii().ptr(), grayscale, w, h, w, &outidx);
 
-    name_to_anchor.insert(p_img_name, nullptr);
+    ImageFrameTrackingData* data = (ImageFrameTrackingData*) memalloc(sizeof(ImageFrameTrackingData));
+    name_to_data.insert(p_img_name, data);
 
     memfree(grayscale);
 
@@ -174,12 +175,4 @@ int ImageTracker::registerImageForTracking(ArSession *p_ar_session, godot::Image
 
     return stts;
 
-}
-
-ArAnchor* ImageTracker::getImageAnchor(const godot::String &p_img_name){
-    if(!name_to_anchor.has(p_img_name)){
-        ALOGV("Requested anchor of image %s\n", p_img_name.ascii().ptr());
-        return nullptr;
-    }
-    return name_to_anchor.get(p_img_name);
 }

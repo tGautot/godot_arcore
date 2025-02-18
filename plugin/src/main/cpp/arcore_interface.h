@@ -77,7 +77,7 @@ public:
 	void enable_vertical_plane_detection(bool p_enable);
 	void enable_horizontal_plane_detection(bool p_enable);
 	void enable_instant_placement(bool p_enable);
-	godot::Transform3D getHitPose(float p_pixel_x, float p_pixel_y, float p_approximate_distance_meters);
+	godot::Transform3D getHitPose(float p_pixel_x, float p_pixel_y);
 	godot::Transform3D getHitRayPose(const godot::Vector3 &p_origin, const godot::Vector3 &p_direction);
 	void enable_images_detection(bool p_enable);
 	void set_node_images_mapping(const godot::Dictionary &in_nodeImagesMap);
@@ -92,7 +92,7 @@ public:
 	godot::PackedByteArray image_tracker_database_get_serialized();
 	void image_tracker_database_load(const godot::PackedByteArray &db);
 	void image_tracker_database_add_image(godot::Ref<godot::Image> img, const godot::String &img_identifier);
-	bool image_tracker_is_image_tracked(const godot::String &img_identifier);
+	bool image_tracker_get_image_tracking_status(const godot::String &img_identifier);
 	godot::Transform3D image_tracker_get_tracked_transform(const godot::String &img_identifier);
 
 

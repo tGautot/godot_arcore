@@ -1,3 +1,4 @@
+#include "ar_utils.h"
 #include "arcore_interface.h"
 #include "arcore_wrapper.h"
 #include "utils.h"
@@ -34,7 +35,7 @@ void ARCoreInterface::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("image_tracker_database_add_image"), &ARCoreInterface::image_tracker_database_add_image);
 	ClassDB::bind_method(D_METHOD("image_tracker_database_get_serialized"), &ARCoreInterface::image_tracker_database_get_serialized);
 	ClassDB::bind_method(D_METHOD("image_tracker_database_load"), &ARCoreInterface::image_tracker_database_load);
-	ClassDB::bind_method(D_METHOD("image_tracker_is_image_tracked"), &ARCoreInterface::image_tracker_is_image_tracked);
+	ClassDB::bind_method(D_METHOD("image_tracker_get_image_tracking_status"), &ARCoreInterface::image_tracker_get_image_tracking_status);
 	ClassDB::bind_method(D_METHOD("image_tracker_get_tracked_transform"), &ARCoreInterface::image_tracker_get_tracked_transform);
 	ClassDB::bind_method(D_METHOD("getNear"), &ARCoreInterface::getNear);
 	ClassDB::bind_method(D_METHOD("getFar"), &ARCoreInterface::getFar);
@@ -229,67 +230,83 @@ Vector3 ARCoreInterface::get_light_main_hdr_intensity() {
 	return res;
 }
 
-Transform3D ARCoreInterface::getHitPose(float p_pixel_x, float p_pixel_y, float p_approximate_distance_meters) {
+Transform3D ARCoreInterface::getHitPose(float p_pixel_x, float p_pixel_y) {
 	Transform3D res;
-	if (m_enable_instant_placement) {
-		ArHitResultList *hit_result_list = nullptr;
-		ArFrame_hitTestInstantPlacement(m_ar_session, m_ar_frame, p_pixel_x, p_pixel_y, p_approximate_distance_meters, hit_result_list);
 
-		int32_t size = 0;
-		ArHitResultList_getSize(m_ar_session, hit_result_list, &size);
-		float currentMinDistance = std::numeric_limits<float>::max();
+	
+	ALOGV("Godot ARCore: Casting screen ray...\n");
 
-		for (int32_t i = 0; i < size; ++i) {
-			ArHitResult *hit_result = nullptr;
-			ArHitResultList_getItem(m_ar_session, hit_result_list, i, hit_result);
-			ArPose *pose = nullptr;
-			ArHitResult_getHitPose(m_ar_session, hit_result, pose);
-			float distance = std::numeric_limits<float>::max();
-			ArHitResult_getDistance(m_ar_session, hit_result, &distance);
+	ArHitResultList *hit_result_list = nullptr;
+	ArHitResultList_create(m_ar_session, &hit_result_list);
+	ArFrame_hitTest(m_ar_session, m_ar_frame, p_pixel_x, p_pixel_y, hit_result_list);
 
-			if (distance < currentMinDistance) {
-				float mat4[16];
-				ArPose_getMatrix(m_ar_session, pose, mat4);
-				res = to_godot_transform(mat4);
-			}
+	int32_t size = 0;
+	ArHitResultList_getSize(m_ar_session, hit_result_list, &size);
+	float currentMinDistance = std::numeric_limits<float>::max();
+
+	ALOGV("Hitlist contains %d results\n", size);
+
+	if (size > 0){
+		ArHitResult *hit_result = nullptr;
+		ArHitResult_create(m_ar_session, &hit_result);
+		ArHitResultList_getItem(m_ar_session, hit_result_list, 0, hit_result);
+		arcore_plugin::ScopedArPose scopedArPose(m_ar_session);
+		ArHitResult_getHitPose(m_ar_session, hit_result, scopedArPose.GetArPose());
+		float distance = std::numeric_limits<float>::max();
+		ArHitResult_getDistance(m_ar_session, hit_result, &distance);
+
+		if (distance < currentMinDistance) {
+			float mat4[16];
+			ArPose_getMatrix(m_ar_session, scopedArPose.GetArPose(), mat4);
+			res = to_godot_transform(mat4);
 		}
-	} else {
-		ALOGW("Godot ARCore: getHitPose called but instant placement is not enabled");
+	
+		ArHitResult_destroy(hit_result);
 	}
+	ArHitResultList_destroy(hit_result_list);
+
 
 	return res;
 }
 
 Transform3D ARCoreInterface::getHitRayPose(const Vector3 &p_origin, const Vector3 &p_direction) {
 	Transform3D res;
-	if (m_enable_instant_placement) {
-		float ray_origin_3[3]{ p_origin.x, p_origin.y, p_origin.z };
-		float ray_direction_3[3]{ p_origin.x, p_origin.y, p_origin.z };
-		ArHitResultList *hit_result_list = nullptr;
-		ArFrame_hitTestRay(m_ar_session, m_ar_frame, ray_origin_3, ray_direction_3, hit_result_list);
 
-		int32_t size = 0;
-		ArHitResultList_getSize(m_ar_session, hit_result_list, &size);
-		float currentMinDistance = std::numeric_limits<float>::max();
+	float ray_origin_3[3]{ p_origin.x, p_origin.y, p_origin.z };
+	float ray_direction_3[3]{ p_origin.x, p_origin.y, p_origin.z };
+	ArHitResultList *hit_result_list = nullptr;
+	ArHitResultList_create(m_ar_session, &hit_result_list);
+	ArFrame_hitTestRay(m_ar_session, m_ar_frame, ray_origin_3, ray_direction_3, hit_result_list);
+	
+	ALOGV("Godot ARCore: Casting ray...\n");
+	
+	int32_t size = 0;
+	ArHitResultList_getSize(m_ar_session, hit_result_list, &size);
+	float currentMinDistance = std::numeric_limits<float>::max();
 
-		for (int32_t i = 0; i < size; ++i) {
-			ArHitResult *hit_result = nullptr;
-			ArHitResultList_getItem(m_ar_session, hit_result_list, i, hit_result);
-			ArPose *pose = nullptr;
-			ArHitResult_getHitPose(m_ar_session, hit_result, pose);
-			float mat4[16];
-			ArPose_getMatrix(m_ar_session, pose, mat4);
-			Transform3D trsf = to_godot_transform(mat4);
-			Vector3 target = trsf.get_origin();
-			float distance = (target - Vector3(ray_origin_3[0], ray_origin_3[1], ray_origin_3[2])).length();
+	ALOGV("Hitlist contains %d results\n", size);
 
-			if (distance < currentMinDistance) {
-				res = trsf;
-			}
+	if(size > 0) {
+		ArHitResult *hit_result = nullptr;
+		ArHitResult_create(m_ar_session, &hit_result);
+		// Only get first result, which is the closest per definition
+		ArHitResultList_getItem(m_ar_session, hit_result_list, 0, hit_result);
+
+		arcore_plugin::ScopedArPose scopedArPose(m_ar_session);
+		ArHitResult_getHitPose(m_ar_session, hit_result, scopedArPose.GetArPose());
+		float mat4[16];
+		ArPose_getMatrix(m_ar_session, scopedArPose.GetArPose(), mat4);
+		Transform3D trsf = to_godot_transform(mat4);
+		Vector3 target = trsf.get_origin();
+		float distance = (target - p_origin).length();
+
+		if (distance < currentMinDistance) {
+			res = trsf;
 		}
-	} else {
-		ALOGW("Godot ARCore: getHitRayPose called but instant placement is not enabled");
+
+		ArHitResult_destroy(hit_result);
 	}
+	ArHitResultList_destroy(hit_result_list);
 
 	return res;
 }
@@ -341,8 +358,8 @@ void ARCoreInterface::image_tracker_database_add_image(godot::Ref<godot::Image> 
 	configureSession();
 }
 
-bool ARCoreInterface::image_tracker_is_image_tracked(const godot::String &img_identifier){
-	return true;
+bool ARCoreInterface::image_tracker_get_image_tracking_status(const godot::String &img_identifier){
+	return m_image_tracker.getImageTrackingStatus(m_ar_session, img_identifier);
 }
 
 godot::Transform3D ARCoreInterface::image_tracker_get_tracked_transform(const godot::String &img_identifier){
