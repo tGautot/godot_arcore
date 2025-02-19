@@ -95,7 +95,6 @@ public:
 	bool image_tracker_get_image_tracking_status(const godot::String &img_identifier);
 	godot::Transform3D image_tracker_get_tracked_transform(const godot::String &img_identifier);
 
-
 	float getNear() { return m_z_near; }
 	float getFar() { return m_z_far; }
 
@@ -142,8 +141,6 @@ private:
 	godot::Vector3 m_light_env_hdr_main_light_intensity;
 
 	void configureSession();
-
-	void handleScreenOrientationChange();
 
 	void estimateLight();
 };

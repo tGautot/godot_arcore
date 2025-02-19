@@ -415,15 +415,21 @@ bool ARCoreInterface::_initialize() {
 			}
 
 			// Get the screen size
-			Size2 size = DisplayServer::get_singleton()->screen_get_size();
+			Size2 screen_size = DisplayServer::get_singleton()->screen_get_size();
 
-			if (size.x > size.y) {
-				m_screen_width = size.y;
-				m_screen_height = size.x;
+			if(screen_size.y > screen_size.x){
+				// hope we are on a phone
+				m_display_orientation = Orientation::ROTATION_0;
+		
+				m_screen_height = screen_size.x;
+				m_screen_width = screen_size.y;
 			} else {
-				m_screen_width = size.x;
-				m_screen_height = size.y;
+				m_display_orientation = Orientation::ROTATION_90;
+		
+				m_screen_width = screen_size.x;
+				m_screen_height = screen_size.y;
 			}
+			
 
 			// Trigger a display rotation
 			m_display_orientation = Orientation::ROTATION_0;
@@ -562,73 +568,6 @@ void ARCoreInterface::_post_draw_viewport(const RID &p_render_target, const Rect
 	add_blit(p_render_target, src_rect, dst_rect, false, 0, false, Vector2(), 0, 0, 0.0, 1.0);
 }
 
-// void ARCoreInterface::handleScreenOrientationChanges()
-// {
-//     DisplayServer::ScreenOrientation orientation = DisplayServer::get_singleton()->screen_get_orientation(DisplayServer::get_singleton()->get_primary_screen());
-//     Orientation display_rotation = Orientation::UNKNOWN;
-
-//     switch (orientation)
-//     {
-//     case DisplayServer::SCREEN_LANDSCAPE:
-//         // ALOGE("MCT Godot ARCore: in SCREEN_LANDSCAPE mode");
-//         display_rotation = Orientation::ROTATION_90;
-//         break;
-//     case DisplayServer::SCREEN_PORTRAIT:
-//         // ALOGE("MCT Godot ARCore: in SCREEN_PORTRAIT mode");
-//         display_rotation = Orientation::ROTATION_0;
-//         break;
-
-//     case DisplayServer::SCREEN_REVERSE_LANDSCAPE:
-//         // ALOGE("MCT Godot ARCore: in SCREEN_REVERSE_LANDSCAPE mode");
-//         display_rotation = Orientation::ROTATION_270;
-//         break;
-
-//     case DisplayServer::SCREEN_REVERSE_PORTRAIT:
-//         // ALOGE("MCT Godot ARCore: in SCREEN_REVERSE_PORTRAIT mode");
-//         display_rotation = Orientation::ROTATION_180;
-//         break;
-
-//     case DisplayServer::SCREEN_SENSOR_LANDSCAPE:
-//         // ALOGE("MCT Godot ARCore: in SCREEN_SENSOR_LANDSCAPE mode");
-//         display_rotation = Orientation::ROTATION_90;
-//         break;
-
-//     case DisplayServer::SCREEN_SENSOR_PORTRAIT:
-//         // ALOGE("MCT Godot ARCore: in SCREEN_SENSOR_PORTRAIT mode");
-//         display_rotation = Orientation::ROTATION_0;
-//         break;
-
-//     case DisplayServer::SCREEN_SENSOR:
-//         // ALOGE("Godot ARCore: SCREEN_SENSOR mode not handle yet");
-//         display_rotation = Orientation::UNKNOWN; //TODO
-//         break;
-//     default:
-//         // ALOGE("MCT Godot ARCore: in some other screen orientation mode");
-//         break;
-//     }
-//     //! Maxime: Todo: Correctly handle orientation changes
-//     // display_rotation = Orientation::VERTICAL;
-
-//     Vector2i screen_size = DisplayServer::get_singleton()->screen_get_size();
-//     ALOGE("MCT screen_size = %d, %d", screen_size.x, screen_size.y);
-
-//     if (m_display_rotation != display_rotation)
-//     {
-//         m_display_rotation = display_rotation;
-//         if (m_display_rotation == Orientation::ROTATION_90 || m_display_rotation == Orientation::ROTATION_270)
-//         {
-//             int tmp = m_height;
-//             m_height = m_width;
-//             m_width = tmp;
-//         }
-
-//         const int32_t c_ar_core_orientation = (int32_t)(Orientation::ROTATION_90); // For now, only godot's Landscape mode works with ARCore
-//         ArSession_setDisplayGeometry(m_ar_session, c_ar_core_orientation, m_width, m_height);
-
-//         ALOGV("MCT Godot ARCore: Window orientation changes to %d (%d, %d)", m_display_rotation, m_width, m_height);
-//     }
-// }
-
 void ARCoreInterface::estimateLight() {
 	// Get light estimation value.
 	ArLightEstimate *ar_light_estimate;
@@ -724,7 +663,19 @@ void ARCoreInterface::_process() {
 		return;
 	}
 
-	ArSession_setDisplayGeometry(m_ar_session, (int32_t)(Orientation::ROTATION_90), m_screen_height, m_screen_width);
+	if(ARCoreWrapper::has_viewport_changed()){
+		ALOGV("Godot ARCore Interface: detected viewport change");
+		
+		m_display_orientation = static_cast<Orientation>(ARCoreWrapper::get_display_orientation());
+		m_screen_width = ARCoreWrapper::get_display_width();
+		m_screen_height = ARCoreWrapper::get_display_height();
+		
+		ALOGV("Orientation: %d, screen dims: %d x %d\n", m_display_orientation, m_screen_width, m_screen_height);
+		
+		ArSession_setDisplayGeometry(m_ar_session, (int32_t)(m_display_orientation), m_screen_width, m_screen_height);
+		
+		ARCoreWrapper::set_viewport_changed(false);
+	}
 	ArSession_setCameraTextureName(m_ar_session, m_background_renderer.getTextureId());
 
 	if (ArSession_update(m_ar_session, m_ar_frame) != AR_SUCCESS) {
