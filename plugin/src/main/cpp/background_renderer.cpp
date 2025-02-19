@@ -143,13 +143,9 @@ void BackgroundRenderer::process(ArSession &p_ar_session, const ArFrame &p_ar_fr
 		// );
     // Convert transformed_uvs to our display transform
 	    godot::Transform2D display_transform;
-	    // display_transform.columns[0] = Vector2(transformed_uvs[2] - transformed_uvs[0], transformed_uvs[3] - transformed_uvs[1]);
-	    // display_transform.columns[1] = Vector2(transformed_uvs[4] - transformed_uvs[0], transformed_uvs[5] - transformed_uvs[1]);
+	    display_transform.columns[0] = Vector2(transformed_uvs[2] - transformed_uvs[0], transformed_uvs[3] - transformed_uvs[1]);
+	    display_transform.columns[1] = Vector2(transformed_uvs[4] - transformed_uvs[0], transformed_uvs[5] - transformed_uvs[1]);
 	    
-		// Testing with transpose because i am going mad
-
-	    display_transform.columns[0] = Vector2(transformed_uvs[5] - transformed_uvs[1], transformed_uvs[4] - transformed_uvs[0]);
-	    display_transform.columns[1] = Vector2(transformed_uvs[3] - transformed_uvs[1], transformed_uvs[2] - transformed_uvs[0]);
 		
 		display_transform.columns[2] = Vector2(transformed_uvs[0], transformed_uvs[1]);
 		
