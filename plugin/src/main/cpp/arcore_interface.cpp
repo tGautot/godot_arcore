@@ -21,6 +21,7 @@ void ARCoreInterface::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("enable_vertical_plane_detection"), &ARCoreInterface::enable_vertical_plane_detection);
 	ClassDB::bind_method(D_METHOD("enable_horizontal_plane_detection"), &ARCoreInterface::enable_horizontal_plane_detection);
 	ClassDB::bind_method(D_METHOD("enable_instant_placement"), &ARCoreInterface::enable_instant_placement);
+	ClassDB::bind_method(D_METHOD("get_camera_feed"), &ARCoreInterface::get_camera_feed);
 	ClassDB::bind_method(D_METHOD("getHitPose"), &ARCoreInterface::getHitPose);
 	ClassDB::bind_method(D_METHOD("getHitRayPose"), &ARCoreInterface::getHitRayPose);
 	ClassDB::bind_method(D_METHOD("enable_images_detection"), &ARCoreInterface::enable_images_detection);
@@ -228,6 +229,11 @@ Vector3 ARCoreInterface::get_light_main_hdr_intensity() {
 	}
 
 	return res;
+}
+
+godot::Ref<godot::CameraFeed> ARCoreInterface::get_camera_feed() {
+	if(m_init_status != INITIALISED) return godot::Ref<godot::CameraFeed>();
+	return m_background_renderer.getFeed();
 }
 
 Transform3D ARCoreInterface::getHitPose(float p_pixel_x, float p_pixel_y) {

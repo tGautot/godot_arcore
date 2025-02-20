@@ -95,6 +95,8 @@ public:
 	bool image_tracker_get_image_tracking_status(const godot::String &img_identifier);
 	godot::Transform3D image_tracker_get_tracked_transform(const godot::String &img_identifier);
 
+	godot::Ref<godot::CameraFeed> get_camera_feed();
+
 	float getNear() { return m_z_near; }
 	float getFar() { return m_z_far; }
 

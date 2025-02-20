@@ -16,6 +16,8 @@ func _exit_tree():
 		XRServer.remove_interface(arcore_interface)
 		arcore_interface = null
 
+
+
 func get_interface():
 	return arcore_interface
 
@@ -78,6 +80,10 @@ func get_light_main_hdr_intensity():
 	if arcore_interface:
 		return arcore_interface.get_light_main_hdr_intensity()
 
+func get_camera_feed():
+	if arcore_interface:
+		return arcore_interface.get_camera_feed()
+
 func create_image_tracker_database():
 	if arcore_interface:
 		arcore_interface.image_tracker_database_create()
@@ -98,4 +104,14 @@ func image_tracker_get_tracked_transform(identifier: String):
 	if arcore_interface:
 		return arcore_interface.image_tracker_get_tracked_transform(identifier)
 
+func image_tracker_get_tracking_status(identifier: String):
+	if arcore_interface:
+		return arcore_interface.image_tracker_get_image_tracking_status(identifier)
 
+func raycast(ray_orig: Vector3, ray_dir: Vector3):
+	if arcore_interface:
+		return arcore_interface.getHitRayPose(ray_orig, ray_dir)
+
+func screenRayCast(screen_x, screen_y):
+	if arcore_interface:
+		return arcore_interface.getHitPose(screen_x, screen_y)
