@@ -33,6 +33,7 @@ func _process(_delta: float):
 	var cam = get_viewport().get_camera_3d()
 	var distToCam = target.global_position.distance_to(cam.global_position)
 	print("Cam global position, ", cam.global_position)
+	print("Cam rotation (deg), ", cam.global_rotation_degrees)
 	print("tracked obj position, ", target.global_position)
 	print("Distance cam to tracked image: ", distToCam)
 	if distToCam > maxDistanceRender:

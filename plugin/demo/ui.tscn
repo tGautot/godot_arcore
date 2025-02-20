@@ -4,7 +4,11 @@
 
 [node name="Node2D" type="Control"]
 layout_mode = 3
-anchors_preset = 0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("1_gq1yt")
 
 [node name="Scale" type="Control" parent="."]
@@ -13,7 +17,7 @@ offset_left = 45.0
 offset_top = 18.0
 offset_right = 85.0
 offset_bottom = 58.0
-scale = Vector2(2.62683, 2.62683)
+scale = Vector2(1.557, 1.557)
 
 [node name="FarSlider" type="HSlider" parent="Scale"]
 layout_mode = 0
