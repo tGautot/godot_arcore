@@ -96,9 +96,9 @@ func load_image_tracker_database(bytes):
 	if arcore_interface:
 		arcore_interface.image_tracker_database_load(bytes)
 
-func image_tracker_database_add_image(img: Image, identifier: String):
+func image_tracker_database_add_image(img: Image, identifier: String, physical_width: float = -1):
 	if arcore_interface:
-		arcore_interface.image_tracker_database_add_image(img, identifier)
+		arcore_interface.image_tracker_database_add_image(img, identifier, physical_width)
 
 func image_tracker_get_tracked_transform(identifier: String):
 	if arcore_interface:
