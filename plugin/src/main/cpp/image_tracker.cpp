@@ -49,8 +49,8 @@ void ImageTracker::loadSerializedDatabase(ArSession *p_ar_session, const uint8_t
     ArAugmentedImageDatabase_deserialize(p_ar_session, r_byte_array, r_size, &image_db);
 }
 
-void ImageTracker::getImageTransformMatrix(ArSession *p_ar_session, const godot::String &p_img_name, float *r_mat4){
-    r_mat4 = name_to_data[p_img_name]->mat4;
+void ImageTracker::getImageTransformMatrix(ArSession *p_ar_session, const godot::String &p_img_name, float **r_mat4){
+    *r_mat4 = name_to_data[p_img_name]->mat4;
 }
 
 bool ImageTracker::getImageTrackingStatus(ArSession *p_ar_session, const godot::String &p_img_name){
@@ -109,7 +109,6 @@ void ImageTracker::process(ArSession &p_ar_session, ArFrame &p_ar_frame){
             }
 
             name_to_data[godotName]->validTracking = true;
-            ArString_release(name);
         }
         else{
             name_to_data[godotName]->validTracking = false;
@@ -121,9 +120,10 @@ void ImageTracker::process(ArSession &p_ar_session, ArFrame &p_ar_frame){
             } else {
                 ALOGV("Godot ARCore: Tracked Image %s has tracking status %d\n", name, tracking_state);
             }
-
+            
             //img_to_anchor[image_index] = nullptr;
         }
+        ArString_release(name);
     }
 }
 

@@ -359,8 +359,8 @@ godot::PackedByteArray ARCoreInterface::image_tracker_database_get_serialized(){
 	return pba;
 }
 
-void ARCoreInterface::image_tracker_database_add_image(godot::Ref<godot::Image> img, const godot::String &img_identifier){
-	m_image_tracker.registerImageForTracking(m_ar_session, img.ptr(), img_identifier);
+void ARCoreInterface::image_tracker_database_add_image(godot::Ref<godot::Image> img, const godot::String &img_identifier, float img_physical_width){
+	m_image_tracker.registerImageForTracking(m_ar_session, img.ptr(), img_identifier, img_physical_width);
 	configureSession();
 }
 
@@ -369,8 +369,8 @@ bool ARCoreInterface::image_tracker_get_image_tracking_status(const godot::Strin
 }
 
 godot::Transform3D ARCoreInterface::image_tracker_get_tracked_transform(const godot::String &img_identifier){
-	float mat[16];
-	m_image_tracker.getImageTransformMatrix(m_ar_session, img_identifier, mat);
+	float *mat;
+	m_image_tracker.getImageTransformMatrix(m_ar_session, img_identifier, &mat);
 	return to_godot_transform(mat);
 }
 

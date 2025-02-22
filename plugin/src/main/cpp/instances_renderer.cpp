@@ -20,8 +20,8 @@ void InstancesRenderer::process(ArSession &p_ar_session) {
         //ALOGV("Godot ARCore: looking at image with id %d\n", k);
         Node3D* v = i->value;
 
-        float mat4[16];
-        m_image_tracker->getImageTransformMatrix(&p_ar_session, k, mat4);
+        float *mat4;
+        m_image_tracker->getImageTransformMatrix(&p_ar_session, k, &mat4);
         Vector3 pos = to_godot_position(mat4);
         if(pos.length() < 0.0001){
             //ALOGV("Godot ARCore: InstanceRenderer: Image tracker hasnt found %s, disabling visibility\n", k.ascii().ptr());

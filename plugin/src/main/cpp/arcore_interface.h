@@ -91,7 +91,7 @@ public:
 	void image_tracker_database_create();
 	godot::PackedByteArray image_tracker_database_get_serialized();
 	void image_tracker_database_load(const godot::PackedByteArray &db);
-	void image_tracker_database_add_image(godot::Ref<godot::Image> img, const godot::String &img_identifier);
+	void image_tracker_database_add_image(godot::Ref<godot::Image> img, const godot::String &img_identifier, float img_phyisical_width = -1.0);
 	bool image_tracker_get_image_tracking_status(const godot::String &img_identifier);
 	godot::Transform3D image_tracker_get_tracked_transform(const godot::String &img_identifier);
 
