@@ -85,10 +85,10 @@ void ImageTracker::process(ArSession &p_ar_session, ArFrame &p_ar_frame){
         char* name;
         ArAugmentedImage_acquireName(&p_ar_session, image, &name);
         godot::String godotName = godot::String(name);
-        //ALOGV("Godot ARCore: Checking Tracking status for image %s\n", name);
+        ALOGV("Godot ARCore: Checking Tracking status for image %s\n", name);
 
         if (tracking_state == AR_TRACKING_STATE_TRACKING) {
-            //ALOGV("Godot ARCore: Tracked Image index %d is being tracked\n", image_index);
+            ALOGV("Godot ARCore: Tracked Image index %d is being tracked\n", image_index);
             ScopedArPose scopedArPose(&p_ar_session);
             ArAugmentedImage_getCenterPose(&p_ar_session, image,
                                         scopedArPose.GetArPose());
@@ -109,9 +109,26 @@ void ImageTracker::process(ArSession &p_ar_session, ArFrame &p_ar_frame){
             }
 
             name_to_data[godotName]->validTracking = true;
+            
+            // first time detecting this image
+            if(name_to_data[godotName]->godotTracker.is_null()){
+                name_to_data[godotName]->godotTracker.instantiate();
+                name_to_data[godotName]->godotTracker->set_tracker_name(godotName);
+                name_to_data[godotName]->godotTracker->set_tracker_type(godot::XRServer::TRACKER_ANCHOR);
+                name_to_data[godotName]->godotTracker->set_tracker_desc(godot::String("Augmented Image tracked via ARCore plugin, image name is ") + godotName);
+                godot::XRServer::get_singleton()->add_tracker(name_to_data[godotName]->godotTracker);
+            }
+
+            godot::Vector3 zero_vec = godot::Vector3(0,0,0);
+            name_to_data[godotName]->godotTracker->set_pose("root", to_godot_transform(name_to_data[godotName]->mat4), 
+                                                                zero_vec, zero_vec, godot::XRPose::TrackingConfidence::XR_TRACKING_CONFIDENCE_NONE);
+
         }
         else{
             name_to_data[godotName]->validTracking = false;
+            if(name_to_data[godotName]->godotTracker.is_valid()){
+                name_to_data[godotName]->godotTracker->invalidate_pose("root");
+            }
             if(tracking_state == AR_TRACKING_STATE_PAUSED){
                 ALOGV("Godot ARCore: Tracked Image %s has tracking PAUSED\n", name);
             }

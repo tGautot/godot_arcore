@@ -5,6 +5,7 @@
 #include <godot_cpp/classes/image.hpp>
 #include <godot_cpp/variant/typed_dictionary.hpp>
 #include <godot_cpp/templates/hash_map.hpp>
+#include <godot_cpp/classes/xr_positional_tracker.hpp>
 
 
 namespace arcore_plugin {
@@ -12,6 +13,7 @@ namespace arcore_plugin {
 typedef struct {
     float mat4[16];
     bool validTracking;
+    godot::Ref<godot::XRPositionalTracker> godotTracker;
 } ImageFrameTrackingData;
 
 class ImageTracker {

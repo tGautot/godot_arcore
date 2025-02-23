@@ -11,6 +11,9 @@ var camFeed: CameraFeed
 
 # Called when the node enters the scene tree for the first time.
 func _enter_tree() -> void:
+	XRServer.tracker_added.connect(func(tracker_name, type):
+		print("New XRServer Tracker ", tracker_name))
+	
 	for s in Engine.get_singleton_list():
 		print("MCT " + s.get_basename())
 	if Engine.has_singleton(_plugin_name):
@@ -53,7 +56,11 @@ func _exit_tree():
 
 func _setup_skyshader_camera_params():
 	var ytex: CameraTexture = skyCamMaterial.get_shader_parameter("camera_y")
+	if not ytex:
+		ytex = CameraTexture.new()
 	var ctex: CameraTexture = skyCamMaterial.get_shader_parameter("camera_CbCr")
+	if not ctex:
+		ctex = CameraTexture.new()
 	ytex.camera_feed_id = camFeed.get_id()
 	ctex.camera_feed_id = camFeed.get_id()
 	print("Setting up camera shader, id is ", camFeed.get_id())

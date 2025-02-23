@@ -14,7 +14,7 @@ void sky() {
 	}
 	else{
 		vec2 uv = FRAGCOORD.xy / viewport_size;
-		
+
 		// Very hacky, from trial and error
 		uv.y = 1.0 - uv.y;
 		mat2 feed_transform_basis = mat2(feed_transform_basis_x, feed_transform_basis_y);
@@ -25,7 +25,7 @@ void sky() {
 		// vec3 color;
 		// color.r = texture(camera_y, uv).r;
 		// color.gb = texture(camera_CbCr, uv).rg - vec2(0.5, 0.5);
- 
+
 		// // YCbCr -> SRGB conversion
 		// // Using BT.709 which is the standard for HDTV
 		// color.rgb = mat3(
