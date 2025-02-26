@@ -3,6 +3,9 @@ extends Node3D
 var _plugin_name = "ARCorePlugin"
 var _android_plugin
 
+@export var trackedPlaneScene: PackedScene
+var allPlanesShowed: Dictionary
+
 var is_estimating_light = false
 var original_light_trsf: Transform3D;
 
@@ -43,8 +46,8 @@ func _enter_tree() -> void:
 		_setup_skyshader_camera_params()
 	else:
 		print("NO CAMERA FEED ON ENTER TREE")
-	#ARCoreInterfaceInstance.enable_vertical_plane_detection(true)
-	#ARCoreInterfaceInstance.enable_horizontal_plane_detection(true)
+	ARCoreInterfaceInstance.enable_vertical_plane_detection(true)
+	ARCoreInterfaceInstance.enable_horizontal_plane_detection(true)
 
 	#ARCoreInterfaceInstance.image_tracker_database_add_image(imageToTrack.get_image(), "base")
 	#ARCoreInterfaceInstance.track_nodes_to_images({
@@ -70,6 +73,19 @@ func _setup_skyshader_camera_params():
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
 	
+	var allIds = ARCoreInterfaceInstance.plane_tracker_get_all_plane_ids()
+	print("All tracked plane ids: ", allIds)
+	for id in allIds:
+		var plane
+		if allPlanesShowed.has(id):
+			plane = allPlanesShowed[id]
+		else:
+			plane = trackedPlaneScene.instantiate()
+			allPlanesShowed[id] = plane
+			add_child(plane)
+		plane.global_transform = ARCoreInterfaceInstance.plane_tracker_get_plane_transform(id)
+		print("Plane ", id, " position is ", plane.global_position)
+	
 	if camFeed == null:
 		print("STILL NO CAMERA FEED")
 		camFeed = ARCoreInterfaceInstance.get_camera_feed()
@@ -77,7 +93,7 @@ func _process(delta):
 			_setup_skyshader_camera_params()
 			
 	if camFeed:
-		print("Camera feed transform: ", camFeed.feed_transform)
+		#print("Camera feed transform: ", camFeed.feed_transform)
 		skyCamMaterial.set_shader_parameter("feed_transform_basis_x", camFeed.feed_transform.x)
 		skyCamMaterial.set_shader_parameter("feed_transform_basis_y", camFeed.feed_transform.y)
 		skyCamMaterial.set_shader_parameter("feed_transform_origin", camFeed.feed_transform.origin)

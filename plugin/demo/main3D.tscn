@@ -1,12 +1,13 @@
-[gd_scene load_steps=19 format=3 uid="uid://b0n6vtr0gl6l3"]
+[gd_scene load_steps=20 format=3 uid="uid://b0n6vtr0gl6l3"]
 
 [ext_resource type="Script" uid="uid://cl1senhkb7cw0" path="res://MeshInstance3D.gd" id="1_0ufg4"]
 [ext_resource type="Script" uid="uid://dri7o8k3ojxs5" path="res://main3D.gd" id="1_a4ilg"]
 [ext_resource type="Material" uid="uid://bx5fypg8vpbdc" path="res://sky_camera_shader_material.tres" id="2_44ouq"]
 [ext_resource type="Image" uid="uid://dts6yjbc0jd2i" path="res://Godot_ARCoreExample.png" id="2_auif7"]
+[ext_resource type="PackedScene" uid="uid://brxoo1l3oentm" path="res://tracked_plane.tscn" id="2_rdgcd"]
 [ext_resource type="PackedScene" uid="uid://cglxfqvt03e63" path="res://ui.tscn" id="3_rflmv"]
 [ext_resource type="PackedScene" uid="uid://bkoj7y68ypvph" path="res://ruler.blend" id="4_qfgab"]
-[ext_resource type="Script" uid="uid://2ol18k5xfigg" path="res://addons/ARCorePlugin/TrackedToImageComponent.gd" id="6_jvady"]
+[ext_resource type="Script" uid="uid://trwnuy6mebmj" path="res://addons/ARCorePlugin/TrackedToImageComponent.gd" id="6_jvady"]
 [ext_resource type="PackedScene" uid="uid://c64yix7y4oc2d" path="res://StickNode.tscn" id="6_u4qf1"]
 [ext_resource type="Script" uid="uid://dvd7shnv4aqkh" path="res://click_detect.gd" id="8_jvady"]
 
@@ -43,6 +44,7 @@ size = Vector3(0.2, 0.2, 0.2)
 
 [node name="Node3D" type="Node3D"]
 script = ExtResource("1_a4ilg")
+trackedPlaneScene = ExtResource("2_rdgcd")
 skyCamMaterial = ExtResource("2_44ouq")
 
 [node name="XROrigin3D" type="XROrigin3D" parent="."]
@@ -87,7 +89,6 @@ transform = Transform3D(0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2, 0, -1, 0)
 [node name="Node" type="Node" parent="ImageTracked/Node3D2"]
 script = ExtResource("6_jvady")
 trackedImage = ExtResource("2_auif7")
-imageName = "argodoticon"
 position_offset = Vector3(0, 0.3, 0)
 maxDistanceRender = 1.0
 x_rotation_mix = 0
