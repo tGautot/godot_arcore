@@ -115,3 +115,19 @@ func raycast(ray_orig: Vector3, ray_dir: Vector3):
 func screenRayCast(screen_x, screen_y):
 	if arcore_interface:
 		return arcore_interface.getHitPose(screen_x, screen_y)
+
+func plane_tracker_get_all_plane_ids():
+	if arcore_interface:
+		return arcore_interface.plane_tracker_get_all_plane_ids()
+
+func plane_tracker_get_plane_boundary(plane_id):
+	if arcore_interface:
+		return arcore_interface.plane_tracker_get_plane_boundary(plane_id)
+
+func plane_tracker_get_plane_transform(plane_id):
+	if arcore_interface:
+		return arcore_interface.plane_tracker_get_plane_transform(plane_id)
+
+func plane_tracker_get_plane_parent(plane_id):
+	if arcore_interface:
+		return arcore_interface.plane_tracker_get_plane_parent(plane_id)
