@@ -15,6 +15,7 @@
 #include "background_renderer.h"
 #include "instances_renderer.h"
 #include "plane_renderer.h"
+#include "plane_tracker.h"
 #include "point_cloud_renderer.h"
 #include "image_tracker.h"
 
@@ -95,6 +96,12 @@ public:
 	bool image_tracker_get_image_tracking_status(const godot::String &img_identifier);
 	godot::Transform3D image_tracker_get_tracked_transform(const godot::String &img_identifier);
 
+	godot::Array plane_tracker_get_all_plane_ids();
+	godot::Array plane_tracker_get_plane_boundary(int plane_id);
+	godot::Transform3D plane_tracker_get_plane_transform(int plane_id);
+	int plane_tracker_get_plane_parent(int plane_id);
+	
+
 	godot::Ref<godot::CameraFeed> get_camera_feed();
 
 	float getNear() { return m_z_near; }
@@ -111,6 +118,7 @@ private:
 
 	arcore_plugin::BackgroundRenderer m_background_renderer;
 	arcore_plugin::PlaneRenderer m_plane_renderer;
+	arcore_plugin::PlaneTracker m_plane_tracker;
 	arcore_plugin::InstancesRenderer m_instances_renderer;
 	arcore_plugin::PointCloudRenderer m_point_cloud_renderer;
 	arcore_plugin::ImageTracker m_image_tracker;

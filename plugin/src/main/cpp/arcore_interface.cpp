@@ -38,6 +38,11 @@ void ARCoreInterface::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("image_tracker_database_load"), &ARCoreInterface::image_tracker_database_load);
 	ClassDB::bind_method(D_METHOD("image_tracker_get_image_tracking_status"), &ARCoreInterface::image_tracker_get_image_tracking_status);
 	ClassDB::bind_method(D_METHOD("image_tracker_get_tracked_transform"), &ARCoreInterface::image_tracker_get_tracked_transform);
+	ClassDB::bind_method(D_METHOD("plane_tracker_get_all_plane_ids"), &ARCoreInterface::plane_tracker_get_all_plane_ids);
+	ClassDB::bind_method(D_METHOD("plane_tracker_get_plane_boundary"), &ARCoreInterface::plane_tracker_get_plane_boundary);
+	ClassDB::bind_method(D_METHOD("plane_tracker_get_plane_transform"), &ARCoreInterface::plane_tracker_get_plane_transform);
+	ClassDB::bind_method(D_METHOD("plane_tracker_get_plane_parent"), &ARCoreInterface::plane_tracker_get_plane_parent);
+
 	ClassDB::bind_method(D_METHOD("getNear"), &ARCoreInterface::getNear);
 	ClassDB::bind_method(D_METHOD("getFar"), &ARCoreInterface::getFar);
 }
@@ -372,6 +377,22 @@ godot::Transform3D ARCoreInterface::image_tracker_get_tracked_transform(const go
 	float *mat;
 	m_image_tracker.getImageTransformMatrix(m_ar_session, img_identifier, &mat);
 	return to_godot_transform(mat);
+}
+
+
+godot::Array ARCoreInterface::plane_tracker_get_all_plane_ids(){
+	return m_plane_tracker.getAllAvailablePlaneIds();
+}
+godot::Array ARCoreInterface::plane_tracker_get_plane_boundary(int plane_id){
+	return m_plane_tracker.getPlaneBoundary(plane_id);
+}
+godot::Transform3D ARCoreInterface::plane_tracker_get_plane_transform(int plane_id){
+	float *mat4;
+	m_plane_tracker.getPlaneTransformMatrix(plane_id, &mat4);
+	return to_godot_transform(mat4);
+}
+int ARCoreInterface::plane_tracker_get_plane_parent(int plane_id){
+	return m_plane_tracker.getPlaneParentId(plane_id);
 }
 
 
@@ -747,9 +768,9 @@ void ARCoreInterface::_process() {
 	}
 
 	if (m_enable_vertical_plane_detection || m_enable_horizontal_plane_detection) {
-		m_plane_renderer.process(*m_ar_session);
+		m_plane_tracker.process(m_ar_session, m_ar_frame);
 	} else {
-		m_plane_renderer.clear();
+		m_plane_tracker.reset();
 	}
 
 	if (m_enable_images_detection) {
